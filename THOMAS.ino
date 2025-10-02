@@ -58,6 +58,8 @@ sd Card Module
 #include "RTClib.h"
 #include <limits.h>
 
+#define OPTIMIZE_FILE_SIZE
+
 // Define pins
 const int chipSelect = 10;  //sd card reader chip select wired to D10
 const int ledPin = 4; // Red LED wired to D4
@@ -129,6 +131,10 @@ unsigned long numBytes = 0;
 unsigned long timeSeconds = 0;
 float humidity = 0; 
 float temperature = 0; 
+
+#ifdef OPTIMIZE_FILE_SIZE
+bool hasRepeat = false;
+#endif
 
 // A counter used to preserve data incase of unplugging, but also displayed occationally
 unsigned long numDataPoints = 0;
@@ -410,20 +416,35 @@ void loop() {
 // Log the time to the .txt file, while keeping track of the number of bits
 void log() {
 
+#ifdef OPTIMIZE_FILE_SIZE
+
   float bufferHumidity = dht.readHumidity();
   float bufferTemperature = dht.readTemperature(); // Celsius
 
   // Only log to the file if new data occurs
   if (bufferHumidity!=humidity || bufferTemperature!=temperature){
 
+    timeSeconds = rtc.now().unixtime()-refTime;
+
+    // Print the data at the end of the succession to properly express it
+    if(hasRepeat == true && (isnan(humidity) || isnan(temperature))){
+      numBytes += dataFile.print(timeSeconds);
+      numBytes += dataFile.print(F(",")); 
+      numBytes += dataFile.print(temperature);
+      numBytes += dataFile.print(F(","));
+      numBytes += dataFile.print(humidity);
+      numBytes += dataFile.println();
+
+      hasRepeat = false;
+    }
+
     humidity = bufferHumidity;
     temperature = bufferTemperature;
-
-    timeSeconds = rtc.now().unixtime()-refTime;
 
     // Check if any reads have failed
     if (isnan(humidity) || isnan(temperature)) {
       Serial.println(F("Failed to read from DHT22 sensor!"));
+
       return;
     }
 
@@ -433,7 +454,34 @@ void log() {
     numBytes += dataFile.print(F(","));
     numBytes += dataFile.print(humidity);
     numBytes += dataFile.println();
+
+    
+  } else {
+    hasRepeat = true;
   }
+
+#else
+
+  humidity = dht.readHumidity();
+  temperature = dht.readTemperature();
+
+  timeSeconds = rtc.now().unixtime()-refTime;
+
+  // Check if any reads have failed
+  if (isnan(humidity) || isnan(temperature)) {
+    Serial.println(F("Failed to read from DHT22 sensor!"));
+    return;
+  }
+
+  numBytes += dataFile.print(timeSeconds);
+  numBytes += dataFile.print(F(",")); 
+  numBytes += dataFile.print(temperature);
+  numBytes += dataFile.print(F(","));
+  numBytes += dataFile.print(humidity);
+  numBytes += dataFile.println();
+
+#endif
+
 }
 
 
