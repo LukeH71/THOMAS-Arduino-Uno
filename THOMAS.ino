@@ -10,7 +10,7 @@
   When you start the program, you will be prompted on the digital display to insert ansd card.
   Once inserted, and a button is pressed to start, the temperature starts to log. Once finished,
   press the button to access the menue, scroll to the "off" button, and click it. You can then
-  scan that micrsd from a computer, find the correct .dat file, and import it into a program
+  scan that micrsd from a computer, find the correct .txt file, and import it into a program
   such as google sheets or exel.
 
   Wiring:
@@ -156,13 +156,6 @@ void setup() {
     while (1);
   }
 
-  if (!sd.begin(chipSelect, SPI_FULL_SPEED)) {
-      state = ERROR_DATAFILE_FAILED;
-
-      Serial.println(F("failed"));
-      return;
-    }
-
   // Get the reference time for timestamping
   DateTime reference = rtc.now();
   refTime = reference.unixtime();
@@ -303,7 +296,7 @@ void defineDateFile(){
         ++i;
         char fileName[64];
 
-        snprintf(fileName, sizeof(fileName), "%s__%i.dat", savedName, i);
+        snprintf(fileName, sizeof(fileName), "%s__%i.txt", savedName, i);
 
         if(sd.exists(fileName)){
           strcpy(savedName, fileName);
@@ -318,7 +311,7 @@ void defineDateFile(){
       return;
 
     } else { // If the file does not exist, create the file name
-      snprintf(savedName, sizeof(savedName), "%s.dat", savedName);
+      snprintf(savedName, sizeof(savedName), "%s.txt", savedName);
     }
 
     Serial.println(savedName);
@@ -330,7 +323,7 @@ void defineDateFile(){
   } else { // If the RTC remained to have power, create the file based off of that in format 6 (MM_DD_YY_HH_mm)
     char fileName[64];
 
-    snprintf(fileName, sizeof(fileName), "%02d_%02d_%02d_%02d_%02d.dat", rtc.now().month(), rtc.now().day(), (rtc.now().year()-2000), rtc.now().hour(), rtc.now().minute());
+    snprintf(fileName, sizeof(fileName), "%02d_%02d_%02d_%02d_%02d.txt", rtc.now().month(), rtc.now().day(), (rtc.now().year()-2000), rtc.now().hour(), rtc.now().minute());
 
     // This level of accuracy should not already have a file attatched to it, so it can confidentally be assigned a value
     dataFile =sd.open(fileName, FILE_WRITE);
@@ -414,7 +407,7 @@ void loop() {
 
 
 
-// Log the time to the .dat file, while keeping track of the number of bits
+// Log the time to the .txt file, while keeping track of the number of bits
 void log() {
 
   timeSeconds = rtc.now().unixtime()-refTime;
@@ -570,6 +563,14 @@ void offMode(){
   } else if (buttonState == HIGH && state==BUTTON_PRESSED) {
 
     lcd.clear();
+
+    // Setup the SD card
+    if (!sd.begin(chipSelect, SPI_FULL_SPEED)) {
+      state = ERROR_DATAFILE_FAILED;
+
+      Serial.println(F("failed"));
+      return;
+    }
 
     // Formatting correctly requires complexity, and such is packaged into a function.
     defineDateFile(); // Define the data file through the RTC, and time.txt if applicable
