@@ -410,23 +410,30 @@ void loop() {
 // Log the time to the .txt file, while keeping track of the number of bits
 void log() {
 
-  timeSeconds = rtc.now().unixtime()-refTime;
+  float bufferHumidity = dht.readHumidity();
+  float bufferTemperature = dht.readTemperature(); // Celsius
 
-  humidity = dht.readHumidity();
-  temperature = dht.readTemperature(); // Celsius
+  // Only log to the file if new data occurs
+  if (bufferHumidity!=humidity || bufferTemperature!=temperature){
 
-  // Check if any reads have failed
-  if (isnan(humidity) || isnan(temperature)) {
-    Serial.println(F("Failed to read from DHT22 sensor!"));
-    return;
+    humidity = bufferHumidity;
+    temperature = bufferTemperature;
+
+    timeSeconds = rtc.now().unixtime()-refTime;
+
+    // Check if any reads have failed
+    if (isnan(humidity) || isnan(temperature)) {
+      Serial.println(F("Failed to read from DHT22 sensor!"));
+      return;
+    }
+
+    numBytes += dataFile.print(timeSeconds);
+    numBytes += dataFile.print(F(",")); 
+    numBytes += dataFile.print(temperature);
+    numBytes += dataFile.print(F(","));
+    numBytes += dataFile.print(humidity);
+    numBytes += dataFile.println();
   }
- 
-  numBytes += dataFile.print(timeSeconds);
-  numBytes += dataFile.print(F(",")); 
-  numBytes += dataFile.print(temperature);
-  numBytes += dataFile.print(F(","));
-  numBytes += dataFile.print(humidity);
-  numBytes += dataFile.println();
 }
 
 
