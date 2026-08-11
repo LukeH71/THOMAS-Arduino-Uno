@@ -30,23 +30,23 @@ SD Card Module
     MISO -> D12
     SCK -> D13
 
-  RTC (DS3231)
+RTC (DS3231)
     VCC -> 5V
     GND -> GND
     SDA -> A4
     SCL -> A5
 
-  LCD1602 I²C
+LCD1602 I²C
     VCC -> 5V
     GND -> GND
     SDA -> A4
     SCL -> A5
 
-  Push Button
+Push Button
     VCC -> 5V
     OUTPUT -> D7
 
-  LED (red preferably)
+LED (red preferably)
     GND -> GND
     VCC -> D4
 ```
