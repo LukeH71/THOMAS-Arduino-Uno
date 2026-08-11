@@ -1,6 +1,6 @@
 # THOMAS-Arduino-Uno
 
-Temperature and humidity logger
+User-friendly temperature and humidity logger.
 
 ## Table of Contents
 - [About](#about)
