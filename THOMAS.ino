@@ -1,54 +1,3 @@
-/*
-      THOMAS 
-      - Temperature & Humidity Observation/Monitoring Assembled Sensor
-    Arduino Uno Code
-
-  This is the code for a temperature logger that saves the temperature and humidity over time
-  to a micrsd card, in a format that is easy to use in graphs through importing to programs
-  such as google spreadsheet.
-
-  When you start the program, you will be prompted on the digital display to insert ansd card.
-  Once inserted, and a button is pressed to start, the temperature starts to log. Once finished,
-  press the button to access the menue, scroll to the "off" button, and click it. You can then
-  scan that micrsd from a computer, find the correct .txt file, and import it into a program
-  such as google sheets or exel.
-
-  Wiring:
-
-  DHT22
-    VCC -> 5V
-    GND -> GND
-    DATA -> D2
-
-sd Card Module
-    VCC -> 5V
-    GND -> GND
-    CS -> D10
-    MOSI -> D11
-    MISO -> D12
-    SCK -> D13
-
-  RTC (DS3231)
-    VCC -> 5V
-    GND -> GND
-  sdA -> A4
-    SCL -> A5
-
-  LCD1602 I²C
-    VCC -> 5V
-    GND -> GND
-  sdA -> A4
-    SCL -> A5
-
-  Push Button
-    VCC -> 5V
-    OUTPUT -> D7
-
-  LED (red)
-    GND -> GND
-    VCC -> D4
-*/
-
 
 #include "DHT.h"
 #include <Wire.h>
@@ -63,7 +12,7 @@ sd Card Module
 // Define pins
 const int chipSelect = 10;  //sd card reader chip select wired to D10
 const int ledPin = 4; // Red LED wired to D4
-const int buttonPin = 7; // Menue / navigator button wired to D7
+const int buttonPin = 7; // Menu / navigator button wired to D7
 #define DHTPIN 2 // Temperature logger data pin wired to D2
 #define DHTTYPE DHT22 // Define sensor type (DHT22, not DHT11)
 #define USE_LONG_FILE_NAMES 1 // For timestamped file names without needing to cram in numbers
@@ -76,7 +25,7 @@ RTC_DS3231 rtc; // RTC / real time clock
 // Enums for code readability
 enum Modes {
   OFF = 0,
-  MODE_SELECT = 1, // Also refered to as menue
+  MODE_SELECT = 1, // Also refered to as menu
   TEMP_HUMIDITY_VIEW = 2,
   DURATION_BYTES_VIEW = 3
 };
@@ -94,36 +43,36 @@ enum States {
   READY_FOR_BUTTON_INPUT = 3,
   BUTTON_PRESSED = 4,
 
-  DONE_WORKING_MAY_REMOVEsd = 6
+  DONE_WORKING_MAY_REMOVE_SD = 6
 };
 
 // Mode and state variables. 'mode' is to select between 4 different main modes: off,
-// menue/mode select, temp/humidity view, and duration/bytes view. 'state' is used as a
+// menu/mode select, temp/humidity view, and duration/bytes view. 'state' is used as a
 // selection of different states within each mode.
 // 
-// The 'state' variable is used in the screen idling logic, the off screen, and the menue.
+// The 'state' variable is used in the screen idling logic, the off screen, and the menu.
 // However, the use of the variable varies drastically in each instance, as to reduce the
 // global namespace, and to maintain efficiency. In the idling logic, it is used to manage
 // button presses. In the off screen, it is used as different messages to display. In the
-// menue, it is used to select which mode to enter.
+// menu, it is used to select which mode to enter.
 Modes mode = OFF;
 States state = CHECK_RTC;
 
 // Various timers/cooldowns
-unsigned long lastPressTime = 0; // Menue cooldown to actually enter a mode
-unsigned long idolingTime = 0; // Screen idling
+unsigned long lastPressTime = 0; // Menu cooldown to actually enter a mode
+unsigned long idlingTime = 0; // Screen idling
 unsigned long logCooldown = 0; // Log cooldown to prevent a log every clock cycle
-unsigned long preventDoubleClick = 0; // Used in the menue to prevent electrical false double-clicks
+unsigned long preventDoubleClick = 0; // Used in the menu to prevent electrical false double-clicks
 
 // The reference time, which is used to correctly assign each log with a timestamp
 unsigned long refTime;
 
 // Different durations / frequencies
-#define IDOLING_DURATION 20000
-#define REMAIN_IDOL_DURATION 30000
+#define IDLING_DURATION 20000
+#define REMAIN_IDLE_DURATION 30000
 #define LOG_FREQUENCY 5000
-#define MENUE_SELECT_DURATION 2000
-#define COUNTER_FAKE_BUTTON_RELEASE_DURATION 50
+#define MENU_SELECT_DURATION 2000
+#define COUNTER_FAKE_BUTTON_RELEASE_DURATION 100
 
 
 // The statistics viewable in the latter 2 modes
@@ -136,7 +85,7 @@ float temperature = 0;
 bool hasRepeat = false;
 #endif
 
-// A counter used to preserve data incase of unplugging, but also displayed occationally
+// A counter used to preserve data in case of unplugging, but also displayed occasionally
 unsigned long numDataPoints = 0;
 
 // The file in which logs are stored, and thesd from which is being read
@@ -238,7 +187,7 @@ void defineDateFile(){
 
           }
 
-          if(concurrentUnderlines == 2) { // A double underscore can only uccor on the 2 formats where an X is supported
+          if(concurrentUnderlines == 2) { // A double underscore can only occur on the 2 formats where an X is supported
             if (format == 2){
               format = 3;
             } else if (format == 4) {
@@ -263,7 +212,7 @@ void defineDateFile(){
             return;
           }
 
-          if(concurrentUnderlines == 1){ // Direct conversion between formats seperated between underscores
+          if(concurrentUnderlines == 1){ // Direct conversion between formats separated between underscores
             switch (format){
               case 0: format = 1; break;
               case 1: format = 2; break;
@@ -275,8 +224,8 @@ void defineDateFile(){
           }
 
           // Adjust the date list (for initializing the RTC)
-          // x = which feild is being edited. Since each format increase increases the feild count, then they are
-          // directly preportional. However, feilds that use the __X suffix jump right to the 6th feild.
+          // x = which field is being edited. Since each format increase increases the field count, then they are
+          // directly proportional. However, fields that use the __X suffix jump right to the 6th field.
           // Because of this, they are subracted if passed, and if format is equal to them, then X is set to 6.
           int x = format - (format > 3) - (format > 5); 
           if (format == 3 || format == 5) { x = 6; }
@@ -323,7 +272,7 @@ void defineDateFile(){
     Serial.println(savedName);
 
     // Open the file name :)
-    dataFile =sd.open(savedName, FILE_WRITE);
+    dataFile = sd.open(savedName, FILE_WRITE);
     sd.remove("time.txt");
 
   } else { // If the RTC remained to have power, create the file based off of that in format 6 (MM_DD_YY_HH_mm)
@@ -331,8 +280,8 @@ void defineDateFile(){
 
     snprintf(fileName, sizeof(fileName), "%02d_%02d_%02d_%02d_%02d.txt", rtc.now().month(), rtc.now().day(), (rtc.now().year()-2000), rtc.now().hour(), rtc.now().minute());
 
-    // This level of accuracy should not already have a file attatched to it, so it can confidentally be assigned a value
-    dataFile =sd.open(fileName, FILE_WRITE);
+    // This level of accuracy should not already have a file attached to it, so it can confidently be assigned a value
+    dataFile = sd.open(fileName, FILE_WRITE);
 
     Serial.println(fileName);
   }
@@ -376,11 +325,11 @@ void loop() {
     case OFF: // The logic of inputing or taking outsd 
       offMode();
       break;
-    case MODE_SELECT: // Menue to change what to display, or to turn off
-      menue();
+    case MODE_SELECT: // Menu to change what to display, or to turn off
+      menu();
       break;
     case TEMP_HUMIDITY_VIEW: // Temp / humidity
-      if (millis() - idolingTime < IDOLING_DURATION) { // Don't print if screen is idle
+      if (millis() - idlingTime < IDLING_DURATION) { // Don't print if screen is idle
         lcd.setCursor(0,0);
         lcd.print(F("Temp: "));
         lcd.print(temperature);
@@ -392,7 +341,7 @@ void loop() {
       }
       break;
     case DURATION_BYTES_VIEW: // Duration / file size
-      if (millis() - idolingTime < IDOLING_DURATION) { 
+      if (millis() - idlingTime < IDLING_DURATION) { 
         lcd.setCursor(0,0);
         lcd.print(timeSeconds);
         lcd.print(F(" Sec elps        "));
@@ -491,27 +440,27 @@ void screenIdle(){
 
   // Turn off backlight after 20 inactive seconds, with a clause ensuring that a call to
   // turn off the backlight won't be called every loop cycle after 30 inactive seconds
-  if (millis() - idolingTime > IDOLING_DURATION && millis() - idolingTime < REMAIN_IDOL_DURATION) {
+  if (millis() - idlingTime > IDLING_DURATION && millis() - idlingTime < REMAIN_IDLE_DURATION) {
     lcd.noBacklight();
   }
 
   // Handle waking up, using 'state' to ensure that one button press, and multiple
-  // loop cycles of holding down the button won't cause the mode to switch immidately
-  // to the menue.
+  // loop cycles of holding down the button won't cause the mode to switch immediately
+  // to the menu.
   //
   // state == 2       Default value before waking the screen
   // state == 3       Value after pressing the button to wake the screen
   // state == 4       After releasing the button to wake the screen, meaning that
   // the user pressed the button, and released it.
 
-  if (millis() - idolingTime < IDOLING_DURATION && state == 2) {
+  if (millis() - idlingTime < IDLING_DURATION && state == 2) {
     state = 4;
   }
 
   int buttonState = digitalRead(buttonPin);
   if (buttonState == LOW && (state == 2 || state == 4)) {
 
-    if (millis() - idolingTime < IDOLING_DURATION && state == 4 && mode != MODE_SELECT) {
+    if (millis() - idlingTime < IDLING_DURATION && state == 4 && mode != MODE_SELECT) {
       mode = MODE_SELECT;
       state = 0;
       lastPressTime = millis();
@@ -519,7 +468,7 @@ void screenIdle(){
       return;
 
     } else {
-      idolingTime = millis();
+      idlingTime = millis();
       lcd.backlight();
     }
 
@@ -541,15 +490,15 @@ void offMode(){
 
   int buttonState = digitalRead(buttonPin);
 
-  // Check wether the RTC lost power in loop-time
+  // Check whether the RTC lost power in loop-time
   if (state==CHECK_RTC) {
     if(rtc.lostPower()){
       Serial.println(F("RTC lost power, setting time!"));
 
-      logCooldown = millis(); // In this instance, logCooldown is used to temprorarially display an error message
+      logCooldown = millis(); // In this instance, logCooldown is used to temporarily display an error message
       state = ERROR_RTC_LOST_POWER;
     } else {
-      state = DEFAULT;
+      state = DEFAULT_STATE;
     }
   }
   
@@ -601,7 +550,7 @@ void offMode(){
       lcd.print(F("and press button"));
       state = READY_FOR_BUTTON_INPUT;
       break;
-    case DONE_WORKING_MAY_REMOVEsd:
+    case DONE_WORKING_MAY_REMOVE_SD:
       lcd.setCursor(0, 0);
       lcd.print(F("You may remove  "));
       lcd.setCursor(0, 1);
@@ -638,11 +587,11 @@ void offMode(){
 
     } else {
 
-      numBytes += dataFile.println(F("Time (Seconds),Temperature (Celcius), Humidity (%RH)"));
+      numBytes += dataFile.println(F("Time (Seconds),Temperature (Celsius), Humidity (%RH)"));
 
       state = DEFAULT_STATE;
 
-      idolingTime = millis();
+      idlingTime = millis();
       mode = TEMP_HUMIDITY_VIEW;
       digitalWrite(ledPin, LOW); // LED is only active when not recording
 
@@ -655,42 +604,42 @@ void offMode(){
 
 
 
-// Mode 1 - menue / mode switcher mode 
+// Mode 1 - menu / mode switcher mode 
 // Changing between which data to view, and turning off
 //
 // Meaning of each 'state' variable can be found by:
-// The number int(state)/2 corresponds to if it is reffering to:
+// The number int(state)/2 corresponds to if it is referring to:
 //   1) Temp / humidity
 //   2) Duration / datafile size
 //   3) off
-// The number state%2 correspons to:
+// The number state%2 corresponds to:
 //   0) The button is not being pressed down
 //   1) The button is being pressed down
 
-void menue(){
+void menu(){
 
 
   // Go to the mode if button has not been pressed in one second
-  if (millis() - lastPressTime > MENUE_SELECT_DURATION && state%2==0) {
+  if (millis() - lastPressTime > MENU_SELECT_DURATION && state%2==0) {
 
     switch(state){
       case 2:
         mode = TEMP_HUMIDITY_VIEW;
         state = DEFAULT_STATE;
 
-        idolingTime = millis();
+        idlingTime = millis();
 
         break;
       case 4:
         mode = DURATION_BYTES_VIEW;
         state = DEFAULT_STATE;
 
-        idolingTime = millis();
+        idlingTime = millis();
 
         break;
       case 6:
         mode = OFF;
-        state = DONE_WORKING_MAY_REMOVEsd;
+        state = DONE_WORKING_MAY_REMOVE_SD;
 
         dataFile.close();
         digitalWrite(ledPin, HIGH);
@@ -743,7 +692,7 @@ void menue(){
         break;
     }
 
-    // The choices between menues
+    // The choices between menus
     lcd.setCursor(0,1);
     lcd.print(F("temp  info  off"));
 
